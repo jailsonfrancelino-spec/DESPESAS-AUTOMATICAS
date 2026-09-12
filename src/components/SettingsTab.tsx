@@ -10,6 +10,9 @@ import {
   playNotificationChime,
   requestNotificationPermission,
   showNativeNotification,
+  generateAccountingTextSummary,
+  downloadTextFile,
+  openWhatsApp,
 } from '../utils';
 import {
   Download,
@@ -30,7 +33,12 @@ import {
   Phone,
   Volume2,
   Send,
+  FileText,
+  Copy,
+  Check,
+  Share2,
 } from 'lucide-react';
+import { AccountingSummaryModal } from './AccountingSummaryModal';
 
 interface SettingsTabProps {
   expenses: Expense[];
@@ -53,7 +61,26 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
   const [phoneInput, setPhoneInput] = useState(notificationSettings.whatsappNumber);
   const [phoneSavedFeedback, setPhoneSavedFeedback] = useState(false);
   const [testingAlarm, setTestingAlarm] = useState(false);
+  const [accountingModalOpen, setAccountingModalOpen] = useState(false);
+  const [quickCopied, setQuickCopied] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleQuickCopyText = async () => {
+    const text = generateAccountingTextSummary(expenses);
+    try {
+      await navigator.clipboard.writeText(text);
+      setQuickCopied(true);
+      setTimeout(() => setQuickCopied(false), 2500);
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const handleQuickDownloadTxt = () => {
+    const today = new Date().toISOString().split('T')[0];
+    const text = generateAccountingTextSummary(expenses);
+    downloadTextFile(`resumo_contabilidade_${today}.txt`, text);
+  };
 
   const handleSavePhone = (e: React.FormEvent) => {
     e.preventDefault();
@@ -504,7 +531,83 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
         </div>
       </section>
 
-      {/* 2. Exportação & Importação de Arquivo CSV */}
+      {/* 2. Resumo das Despesas em Formato Texto (Contabilidade & WhatsApp) */}
+      <section className="bg-white p-4 sm:p-5 rounded-2xl border border-emerald-200/90 shadow-xs space-y-3.5">
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex items-center gap-2.5">
+            <div className="w-10 h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center shadow-xs shrink-0">
+              <FileText className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="flex items-center gap-1.5">
+                <h3 className="text-sm font-bold text-slate-900">
+                  Resumo das Despesas em Texto
+                </h3>
+                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 border border-emerald-200">
+                  Contabilidade
+                </span>
+              </div>
+              <p className="text-xs text-slate-500">
+                Gere um resumo simples em texto para compartilhar no WhatsApp ou exportar (.txt) facilitando a contabilidade das empresas.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Informative breakdown banner */}
+        <div className="p-3 bg-slate-50 border border-slate-200/80 rounded-xl text-xs space-y-1">
+          <p className="font-semibold text-slate-700 flex items-center gap-1.5">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block" />
+            Organizado por empresa: <strong>Academia</strong>, <strong>Bets</strong> e <strong>Pessoal</strong>
+          </p>
+          <p className="text-slate-500 text-[11px]">
+            Totais discriminados com o que foi liquidado e pendências para envio rápido ao contador ou sócios.
+          </p>
+        </div>
+
+        {/* Primary Action Button to open Generator Modal */}
+        <button
+          type="button"
+          id="btn-open-accounting-summary"
+          onClick={() => setAccountingModalOpen(true)}
+          className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:scale-98 text-white font-bold text-xs sm:text-sm shadow-xs transition-all"
+        >
+          <FileText className="w-4 h-4" />
+          <span>Gerar Resumo em Texto (WhatsApp / Exportar)</span>
+        </button>
+
+        {/* Quick Actions Row */}
+        <div className="grid grid-cols-2 gap-2 pt-1 border-t border-slate-100">
+          <button
+            type="button"
+            onClick={handleQuickCopyText}
+            className="flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 font-bold text-xs transition-colors"
+          >
+            {quickCopied ? (
+              <>
+                <Check className="w-3.5 h-3.5 text-emerald-600" />
+                <span className="text-emerald-700">Copiado!</span>
+              </>
+            ) : (
+              <>
+                <Copy className="w-3.5 h-3.5 text-slate-500" />
+                <span>Copiar Texto Rápido</span>
+              </>
+            )}
+          </button>
+
+          <button
+            type="button"
+            onClick={handleQuickDownloadTxt}
+            className="flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 font-bold text-xs transition-colors"
+          >
+            <Download className="w-3.5 h-3.5 text-slate-500" />
+            <span>Exportar .TXT</span>
+          </button>
+        </div>
+      </section>
+
+      {/* 3. Exportação & Importação de Arquivo CSV */}
       <section className="bg-white p-4 rounded-2xl border border-slate-200/90 shadow-xs space-y-3">
         <div className="flex items-center gap-2">
           <div className="p-2 rounded-xl bg-emerald-50 text-emerald-700">
@@ -618,6 +721,13 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
           </button>
         </div>
       </section>
+      {/* Modal de Resumo Contábil das Empresas */}
+      <AccountingSummaryModal
+        isOpen={accountingModalOpen}
+        onClose={() => setAccountingModalOpen(false)}
+        expenses={expenses}
+        notificationSettings={notificationSettings}
+      />
     </div>
   );
 };

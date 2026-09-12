@@ -661,3 +661,120 @@ export function saveNotificationSettings(settings: NotificationSettings) {
     console.error(e);
   }
 }
+
+export function downloadTextFile(filename: string, text: string) {
+  const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.setAttribute('download', filename);
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+}
+
+export function generateAccountingTextSummary(
+  expenses: Expense[],
+  options?: {
+    entity?: ExpenseEntity | 'Todas';
+    status?: 'Todas' | 'Pendente' | 'Pago';
+    customNotes?: string;
+  }
+): string {
+  const entityFilter = options?.entity || 'Todas';
+  const statusFilter = options?.status || 'Todas';
+
+  const now = new Date();
+  const dateStr = now.toLocaleDateString('pt-BR');
+  const timeStr = now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+
+  // Filter expenses
+  const filtered = expenses.filter(exp => {
+    if (entityFilter !== 'Todas' && (exp.entidade || 'Pessoal') !== entityFilter) {
+      return false;
+    }
+    if (statusFilter !== 'Todas' && exp.status !== statusFilter) {
+      return false;
+    }
+    return true;
+  });
+
+  const entitiesToInclude: ExpenseEntity[] =
+    entityFilter === 'Todas'
+      ? ['Academia', 'Bets', 'Pessoal']
+      : [entityFilter];
+
+  let msg = `📊 *RESUMO CONTÁBIL DE DESPESAS*\n`;
+  msg += `📅 *Data de Emissão:* ${dateStr} às ${timeStr}\n`;
+  msg += `🏢 *Filtro:* ${
+    entityFilter === 'Todas'
+      ? 'Todas as Empresas (Academia, Bets e Pessoal)'
+      : entityFilter
+  }\n`;
+  if (statusFilter !== 'Todas') {
+    msg += `📌 *Status:* Somente ${statusFilter}s\n`;
+  }
+  msg += `────────────────────────────\n\n`;
+
+  let totalGeral = 0;
+  let totalPagoGeral = 0;
+  let totalPendenteGeral = 0;
+  let totalCount = 0;
+
+  for (const ent of entitiesToInclude) {
+    const list = filtered.filter(e => (e.entidade || 'Pessoal') === ent);
+    if (list.length === 0 && entityFilter !== 'Todas') {
+      msg += `*(Nenhuma despesa encontrada para ${ent})*\n\n`;
+      continue;
+    }
+    if (list.length === 0) continue;
+
+    const totalEnt = list.reduce((acc, e) => acc + (Number(e.valor) || 0), 0);
+    const paidList = list.filter(e => e.status === 'Pago');
+    const pendList = list.filter(e => e.status === 'Pendente');
+    const totalPaid = paidList.reduce((acc, e) => acc + (Number(e.valor) || 0), 0);
+    const totalPend = pendList.reduce((acc, e) => acc + (Number(e.valor) || 0), 0);
+
+    totalGeral += totalEnt;
+    totalPagoGeral += totalPaid;
+    totalPendenteGeral += totalPend;
+    totalCount += list.length;
+
+    const icon = ent === 'Academia' ? '🏋️' : ent === 'Bets' ? '🎲' : '👤';
+    const tag = ent === 'Pessoal' ? 'CONTA PESSOAL' : 'EMPRESA';
+
+    msg += `${icon} *${ent.toUpperCase()} (${tag})*\n`;
+    msg += `• Total Registrado: ${formatCurrency(totalEnt)}\n`;
+    msg += `• 🟢 Total Pago: ${formatCurrency(totalPaid)} (${paidList.length} contas)\n`;
+    msg += `• 🔴 Total Pendente: ${formatCurrency(totalPend)} (${pendList.length} contas)\n`;
+    msg += `• Detalhamento dos Itens:\n`;
+
+    list.forEach((item, idx) => {
+      const statusIcon = item.status === 'Pago' ? '🟢 [PAGO]' : '🔴 [PENDENTE]';
+      const dateInfo =
+        item.status === 'Pago' && item.pagoEm
+          ? `(Pago em ${item.pagoEm})`
+          : `(Venc: ${item.vencimento})`;
+      msg += `   ${idx + 1}. ${item.descricao} - *${formatCurrency(item.valor)}* ${statusIcon} ${dateInfo}\n`;
+    });
+
+    msg += `\n`;
+  }
+
+  msg += `════════════════════════════\n`;
+  msg += `📈 *CONSOLIDAÇÃO GERAL:*\n`;
+  msg += `💰 *Volume Total:* ${formatCurrency(totalGeral)}\n`;
+  msg += `🟢 *Total Já Liquidado:* ${formatCurrency(totalPagoGeral)}\n`;
+  msg += `🔴 *Total a Liquidar:* ${formatCurrency(totalPendenteGeral)}\n`;
+  msg += `📋 *Qtd. Despesas:* ${totalCount} registros\n`;
+
+  if (options?.customNotes && options.customNotes.trim()) {
+    msg += `\n📝 *Observações da Contabilidade:*\n${options.customNotes.trim()}\n`;
+  }
+
+  msg += `════════════════════════════\n`;
+  msg += `_Gerado pelo aplicativo de Gestão Financeira_`;
+
+  return msg;
+}
