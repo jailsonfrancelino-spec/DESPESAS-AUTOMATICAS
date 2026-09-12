@@ -1,4 +1,4 @@
-import React, { useState, useRef, useMemo } from 'react';
+import React, { useState, useRef, useMemo, useEffect } from 'react';
 import { Expense, ExpenseEntity, NotificationSettings } from '../types';
 import {
   exportExpensesToCSV,
@@ -39,9 +39,11 @@ import {
   Share2,
   Layers,
   Sparkles,
+  PlusSquare,
 } from 'lucide-react';
 import { ExpenseCategoryItem } from '../types';
 import { AccountingSummaryModal } from './AccountingSummaryModal';
+import { AddToHomeScreenModal } from './AddToHomeScreenModal';
 
 interface SettingsTabProps {
   expenses: Expense[];
@@ -70,7 +72,20 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
   const [testingAlarm, setTestingAlarm] = useState(false);
   const [accountingModalOpen, setAccountingModalOpen] = useState(false);
   const [quickCopied, setQuickCopied] = useState(false);
+  const [homeScreenModalOpen, setHomeScreenModalOpen] = useState(false);
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    const handleBeforeInstallPrompt = (e: Event) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+    };
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    };
+  }, []);
 
   const handleQuickCopyText = async () => {
     const text = generateAccountingTextSummary(expenses);
@@ -268,40 +283,68 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
         </p>
       </div>
 
-      {/* Cartão de Confirmação e Instruções do Ícone no iPhone */}
-      <section className="bg-gradient-to-br from-slate-950 via-slate-900 to-amber-950 text-white p-4 sm:p-5 rounded-2xl border border-amber-500/30 shadow-sm space-y-3.5">
-        <div className="flex items-center gap-3">
-          <img
-            src="/apple-touch-icon.png"
-            alt="Ícone do App no iPhone"
-            className="w-16 h-16 rounded-2xl border-2 border-amber-400/90 shadow-md object-cover shrink-0"
-            referrerPolicy="no-referrer"
-          />
-          <div className="min-w-0">
-            <div className="flex items-center gap-2">
-              <h3 className="text-sm sm:text-base font-black text-white truncate">
-                Ícone do App no iPhone
-              </h3>
-              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-400 text-slate-950 shrink-0">
-                Ativo
-              </span>
+      {/* Opção: Adicionar à Tela Inicial & Ícone Oficial do iPhone */}
+      <section className="bg-gradient-to-br from-slate-950 via-slate-900 to-amber-950 text-white p-4 sm:p-5 rounded-2xl border border-amber-500/30 shadow-md space-y-4">
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <img
+              src="/apple-touch-icon.png"
+              alt="Ícone do App no iPhone"
+              className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl border-2 border-amber-400/90 shadow-md object-cover shrink-0"
+              referrerPolicy="no-referrer"
+            />
+            <div className="min-w-0">
+              <div className="flex items-center gap-2">
+                <h3 className="text-sm sm:text-base font-black text-white truncate">
+                  Adicionar à Tela Inicial
+                </h3>
+                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-400 text-slate-950 shrink-0">
+                  Novo
+                </span>
+              </div>
+              <p className="text-xs text-slate-300 mt-0.5">
+                Ícone oficial <strong className="text-amber-300">DESPESAS JAILSON</strong> pronto para salvar no seu iPhone ou celular.
+              </p>
             </div>
-            <p className="text-xs text-slate-300 mt-0.5">
-              Imagem <strong className="text-amber-300">DESPESAS JAILSON</strong> configurada como ícone oficial do aplicativo.
-            </p>
           </div>
         </div>
 
+        {/* Botão de Ação Principal: Adicionar à Tela Inicial */}
+        <button
+          type="button"
+          onClick={() => setHomeScreenModalOpen(true)}
+          className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-gradient-to-r from-amber-500 via-amber-400 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-slate-950 font-black text-xs sm:text-sm shadow-md transition-all active:scale-98"
+        >
+          <Smartphone className="w-4 h-4" />
+          <span>📲 Adicionar à Tela Inicial (Ver Passo a Passo)</span>
+        </button>
+
+        {/* Resumo Rápido para iPhone */}
         <div className="bg-black/50 rounded-xl p-3 border border-white/10 text-xs space-y-2">
-          <p className="font-bold text-amber-300 flex items-center gap-1.5">
-            <span>📲 Como salvar na Tela de Início do iPhone:</span>
+          <p className="font-bold text-amber-300 flex items-center justify-between">
+            <span>Como salvar no Safari do iPhone:</span>
+            <button
+              type="button"
+              onClick={() => setHomeScreenModalOpen(true)}
+              className="text-[11px] text-amber-400 hover:underline font-normal"
+            >
+              Abrir guia completo &rarr;
+            </button>
           </p>
-          <ol className="list-decimal list-inside space-y-1.5 text-slate-200 text-xs">
-            <li>No <strong>Safari</strong> do seu iPhone, abra este app.</li>
-            <li>Toque no botão <strong>Compartilhar</strong> (ícone com quadrado e seta para cima <span className="text-amber-400 font-bold">⬆️</span> na barra inferior do Safari).</li>
-            <li>Role a lista para baixo e toque em <strong>"Adicionar à Tela de Início"</strong> (ícone ➕).</li>
-            <li>O nome já virá como <strong>"Despesas"</strong> com este exato ícone. Toque em <strong>Adicionar</strong>.</li>
-          </ol>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-slate-200 text-xs">
+            <div className="p-2 bg-white/5 rounded-lg border border-white/5 flex items-center gap-2">
+              <span className="w-5 h-5 rounded bg-amber-400 text-slate-950 font-bold flex items-center justify-center text-[10px] shrink-0">1</span>
+              <span>Toque em <strong>Compartilhar (⬆️)</strong> no Safari</span>
+            </div>
+            <div className="p-2 bg-white/5 rounded-lg border border-white/5 flex items-center gap-2">
+              <span className="w-5 h-5 rounded bg-amber-400 text-slate-950 font-bold flex items-center justify-center text-[10px] shrink-0">2</span>
+              <span>Escolha <strong>"Adicionar à Tela de Início"</strong> (➕)</span>
+            </div>
+            <div className="p-2 bg-white/5 rounded-lg border border-white/5 flex items-center gap-2">
+              <span className="w-5 h-5 rounded bg-amber-400 text-slate-950 font-bold flex items-center justify-center text-[10px] shrink-0">3</span>
+              <span>Toque em <strong>Adicionar</strong></span>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -845,6 +888,14 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
         onClose={() => setAccountingModalOpen(false)}
         expenses={expenses}
         notificationSettings={notificationSettings}
+      />
+
+      {/* Modal Interativo de Adicionar à Tela Inicial */}
+      <AddToHomeScreenModal
+        isOpen={homeScreenModalOpen}
+        onClose={() => setHomeScreenModalOpen(false)}
+        deferredPrompt={deferredPrompt}
+        onInstallPromptSuccess={() => setDeferredPrompt(null)}
       />
     </div>
   );
