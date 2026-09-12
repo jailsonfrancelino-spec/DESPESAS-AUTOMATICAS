@@ -264,9 +264,46 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
           Relatórios &amp; Ajustes
         </h2>
         <p className="text-xs text-slate-500">
-          WhatsApp de lembretes das 09h, comparativo financeiro e backup.
+          WhatsApp de lembretes das 09h, ícone no iPhone, comparativo e backup.
         </p>
       </div>
+
+      {/* Cartão de Confirmação e Instruções do Ícone no iPhone */}
+      <section className="bg-gradient-to-br from-slate-950 via-slate-900 to-amber-950 text-white p-4 sm:p-5 rounded-2xl border border-amber-500/30 shadow-sm space-y-3.5">
+        <div className="flex items-center gap-3">
+          <img
+            src="/apple-touch-icon.png"
+            alt="Ícone do App no iPhone"
+            className="w-16 h-16 rounded-2xl border-2 border-amber-400/90 shadow-md object-cover shrink-0"
+            referrerPolicy="no-referrer"
+          />
+          <div className="min-w-0">
+            <div className="flex items-center gap-2">
+              <h3 className="text-sm sm:text-base font-black text-white truncate">
+                Ícone do App no iPhone
+              </h3>
+              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-400 text-slate-950 shrink-0">
+                Ativo
+              </span>
+            </div>
+            <p className="text-xs text-slate-300 mt-0.5">
+              Imagem <strong className="text-amber-300">DESPESAS JAILSON</strong> configurada como ícone oficial do aplicativo.
+            </p>
+          </div>
+        </div>
+
+        <div className="bg-black/50 rounded-xl p-3 border border-white/10 text-xs space-y-2">
+          <p className="font-bold text-amber-300 flex items-center gap-1.5">
+            <span>📲 Como salvar na Tela de Início do iPhone:</span>
+          </p>
+          <ol className="list-decimal list-inside space-y-1.5 text-slate-200 text-xs">
+            <li>No <strong>Safari</strong> do seu iPhone, abra este app.</li>
+            <li>Toque no botão <strong>Compartilhar</strong> (ícone com quadrado e seta para cima <span className="text-amber-400 font-bold">⬆️</span> na barra inferior do Safari).</li>
+            <li>Role a lista para baixo e toque em <strong>"Adicionar à Tela de Início"</strong> (ícone ➕).</li>
+            <li>O nome já virá como <strong>"Despesas"</strong> com este exato ícone. Toque em <strong>Adicionar</strong>.</li>
+          </ol>
+        </div>
+      </section>
 
       {/* 0. Notificações & WhatsApp das 09:00 */}
       <section className="bg-white p-4 sm:p-5 rounded-2xl border border-emerald-200/90 shadow-xs space-y-4">

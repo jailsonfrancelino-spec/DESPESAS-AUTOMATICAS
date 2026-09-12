@@ -48,7 +48,12 @@ export const Header: React.FC<HeaderProps> = ({
       <div className="space-y-1">
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-2.5">
-            <span className="text-2xl sm:text-3xl select-none" role="img" aria-label="Smartphone">📱</span>
+            <img
+              src="/apple-touch-icon.png"
+              alt="Ícone Despesas Jailson"
+              className="w-10 h-10 rounded-xl shadow-xs border border-amber-400/50 object-cover shrink-0"
+              referrerPolicy="no-referrer"
+            />
             <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900">
               Gestão Financeira &amp; Lembretes
             </h1>
