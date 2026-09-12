@@ -1,6 +1,6 @@
 {
   "name": "Gestão Financeira & Lembretes",
-  "description": "Controle financeiro e despesas dividido entre Pessoal e empresas (Academia e Bets) com lembretes e comprovantes.",
+  "description": "Controle financeiro dividido entre Pessoal e empresas (Academia e Bets) com lembretes às 09h no WhatsApp, modalidades com símbolos personalizados e ajuste de valor no pagamento.",
   "requestFramePermissions": [],
   "majorCapabilities": [
     "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"

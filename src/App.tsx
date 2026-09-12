@@ -4,10 +4,12 @@
  */
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { Expense, ExpenseEntity, TabType, NotificationSettings } from './types';
+import { Expense, ExpenseCategoryItem, ExpenseEntity, TabType, NotificationSettings } from './types';
 import {
   loadExpensesFromStorage,
   saveExpensesToStorage,
+  loadCategoriesFromStorage,
+  saveCategoriesToStorage,
   INITIAL_EXPENSES,
   formatDateToBR,
   formatDateToISO,
@@ -25,11 +27,16 @@ import { NewExpenseTab } from './components/NewExpenseTab';
 import { SettingsTab } from './components/SettingsTab';
 import { ReceiptModal } from './components/ReceiptModal';
 import { WhatsAppModal } from './components/WhatsAppModal';
+import { CategoryManagerModal } from './components/CategoryManagerModal';
+import { PaymentConfirmationModal } from './components/PaymentConfirmationModal';
 import { Bell, X } from 'lucide-react';
 
 export default function App() {
   const [expenses, setExpenses] = useState<Expense[]>(() => {
     return loadExpensesFromStorage();
+  });
+  const [categories, setCategories] = useState<ExpenseCategoryItem[]>(() => {
+    return loadCategoriesFromStorage();
   });
   const [notificationSettings, setNotificationSettings] = useState<NotificationSettings>(() => {
     return loadNotificationSettings();
@@ -40,11 +47,19 @@ export default function App() {
   const [whatsAppModalOpen, setWhatsAppModalOpen] = useState(false);
   const [selectedExpenseForWhatsApp, setSelectedExpenseForWhatsApp] = useState<Expense | null>(null);
   const [dailyAlarmBannerVisible, setDailyAlarmBannerVisible] = useState(false);
+  const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
+  const [paymentModalExpense, setPaymentModalExpense] = useState<Expense | null>(null);
 
   // Sync expenses with localStorage
   useEffect(() => {
     saveExpensesToStorage(expenses);
   }, [expenses]);
+
+  // Sync categories
+  const handleSaveCategories = (updatedCategories: ExpenseCategoryItem[]) => {
+    setCategories(updatedCategories);
+    saveCategoriesToStorage(updatedCategories);
+  };
 
   // Sync notification settings with localStorage
   const handleUpdateNotificationSettings = (newSettings: NotificationSettings) => {
@@ -125,19 +140,39 @@ export default function App() {
     return () => clearInterval(interval);
   }, [notificationSettings, dueTodayExpenses]);
 
-  // Action: Mark as Paid
-  const handleConfirmPayment = (id: number) => {
-    const todayBR = formatDateToBR(new Date().toISOString().split('T')[0]);
+  // Action: Open Payment Modal to confirm and edit varying amount
+  const handleOpenPaymentModal = (expense: Expense) => {
+    setPaymentModalExpense(expense);
+  };
+
+  // Action: Confirm payment with edited amount and details
+  const handleConfirmPaymentWithDetails = (
+    expenseId: number,
+    paidAmount: number,
+    paidDate: string,
+    notes?: string,
+    comprovanteData?: {
+      comprovante?: string;
+      comprovanteNome?: string;
+      comprovanteTipo?: 'image' | 'pdf' | 'file';
+    }
+  ) => {
     setExpenses(prev =>
-      prev.map(exp =>
-        exp.id === id
-          ? {
-              ...exp,
-              status: 'Pago',
-              pagoEm: todayBR,
-            }
-          : exp
-      )
+      prev.map(exp => {
+        if (exp.id === expenseId) {
+          return {
+            ...exp,
+            status: 'Pago',
+            valor: paidAmount,
+            pagoEm: paidDate,
+            observacao: notes !== undefined && notes !== '' ? notes : exp.observacao,
+            comprovante: comprovanteData?.comprovante || exp.comprovante,
+            comprovanteNome: comprovanteData?.comprovanteNome || exp.comprovanteNome,
+            comprovanteTipo: comprovanteData?.comprovanteTipo || exp.comprovanteTipo,
+          };
+        }
+        return exp;
+      })
     );
   };
 
@@ -256,7 +291,8 @@ export default function App() {
           {activeTab === 'overview' && (
             <OverviewTab
               expenses={expenses}
-              onConfirmPayment={handleConfirmPayment}
+              categories={categories}
+              onConfirmPayment={handleOpenPaymentModal}
               onToggleStatus={handleToggleStatus}
               onDeleteExpense={handleDeleteExpense}
               onOpenReceipt={setReceiptExpense}
@@ -264,6 +300,7 @@ export default function App() {
               onNavigateToNewWithEntity={handleNavigateToNewWithEntity}
               onNotifyWhatsAppExpense={handleNotifyWhatsAppExpense}
               onOpenWhatsAppModal={handleOpenDailyWhatsAppModal}
+              onOpenCategoriesModal={() => setIsCategoryModalOpen(true)}
               whatsappNumber={notificationSettings.whatsappNumber}
             />
           )}
@@ -273,13 +310,15 @@ export default function App() {
             <EntityTab
               entity="Pessoal"
               expenses={expenses}
-              onConfirmPayment={handleConfirmPayment}
+              categories={categories}
+              onConfirmPayment={handleOpenPaymentModal}
               onToggleStatus={handleToggleStatus}
               onDeleteExpense={handleDeleteExpense}
               onOpenReceipt={setReceiptExpense}
               onAddNewExpense={handleNavigateToNewWithEntity}
               onNotifyWhatsAppExpense={handleNotifyWhatsAppExpense}
               onOpenWhatsAppModal={handleOpenDailyWhatsAppModal}
+              onOpenCategoriesModal={() => setIsCategoryModalOpen(true)}
             />
           )}
 
@@ -288,13 +327,15 @@ export default function App() {
             <EntityTab
               entity="Academia"
               expenses={expenses}
-              onConfirmPayment={handleConfirmPayment}
+              categories={categories}
+              onConfirmPayment={handleOpenPaymentModal}
               onToggleStatus={handleToggleStatus}
               onDeleteExpense={handleDeleteExpense}
               onOpenReceipt={setReceiptExpense}
               onAddNewExpense={handleNavigateToNewWithEntity}
               onNotifyWhatsAppExpense={handleNotifyWhatsAppExpense}
               onOpenWhatsAppModal={handleOpenDailyWhatsAppModal}
+              onOpenCategoriesModal={() => setIsCategoryModalOpen(true)}
             />
           )}
 
@@ -303,13 +344,15 @@ export default function App() {
             <EntityTab
               entity="Bets"
               expenses={expenses}
-              onConfirmPayment={handleConfirmPayment}
+              categories={categories}
+              onConfirmPayment={handleOpenPaymentModal}
               onToggleStatus={handleToggleStatus}
               onDeleteExpense={handleDeleteExpense}
               onOpenReceipt={setReceiptExpense}
               onAddNewExpense={handleNavigateToNewWithEntity}
               onNotifyWhatsAppExpense={handleNotifyWhatsAppExpense}
               onOpenWhatsAppModal={handleOpenDailyWhatsAppModal}
+              onOpenCategoriesModal={() => setIsCategoryModalOpen(true)}
             />
           )}
 
@@ -317,6 +360,8 @@ export default function App() {
           {activeTab === 'new_expense' && (
             <NewExpenseTab
               initialEntity={newExpenseEntity}
+              categories={categories}
+              onOpenCategoriesModal={() => setIsCategoryModalOpen(true)}
               onAddExpense={handleAddExpense}
               onNavigateToTab={setActiveTab}
             />
@@ -326,6 +371,8 @@ export default function App() {
           {activeTab === 'settings' && (
             <SettingsTab
               expenses={expenses}
+              categories={categories}
+              onOpenCategoriesModal={() => setIsCategoryModalOpen(true)}
               onImportExpenses={handleImportExpenses}
               onResetExpenses={handleResetExpenses}
               notificationSettings={notificationSettings}
@@ -350,6 +397,22 @@ export default function App() {
       <ReceiptModal
         expense={receiptExpense}
         onClose={() => setReceiptExpense(null)}
+      />
+
+      {/* Modal de Gestão de Modalidades & Símbolos (Cartão, Energia, Água, etc.) */}
+      <CategoryManagerModal
+        isOpen={isCategoryModalOpen}
+        onClose={() => setIsCategoryModalOpen(false)}
+        categories={categories}
+        onSaveCategories={handleSaveCategories}
+      />
+
+      {/* Modal de Confirmação de Pagamento com Edição do Valor Variável */}
+      <PaymentConfirmationModal
+        isOpen={Boolean(paymentModalExpense)}
+        expense={paymentModalExpense}
+        onClose={() => setPaymentModalExpense(null)}
+        onConfirmPayment={handleConfirmPaymentWithDetails}
       />
     </div>
   );

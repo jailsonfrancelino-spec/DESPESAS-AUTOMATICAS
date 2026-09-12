@@ -1,6 +1,23 @@
 export type ExpenseEntity = 'Pessoal' | 'Academia' | 'Bets';
 
+export interface ExpenseCategoryItem {
+  id: string;
+  nome: string;
+  simbolo: string;
+  cor?: string;
+  padrao?: boolean;
+}
+
 export type ExpenseCategory =
+  | 'Cartão de Crédito'
+  | 'Internet'
+  | 'Funcionário'
+  | 'Contador'
+  | 'Casa'
+  | 'CNPJ'
+  | 'Imposto'
+  | 'Energia'
+  | 'Água'
   | 'Moradia'
   | 'Alimentação'
   | 'Transporte'
@@ -17,7 +34,8 @@ export type ExpenseCategory =
   | 'Softwares & Ferramentas'
   | 'Servidores & VPS'
   | 'Taxas & Impostos'
-  | 'Outros';
+  | 'Outros'
+  | string;
 
 export type ExpenseStatus = 'Pendente' | 'Pago';
 

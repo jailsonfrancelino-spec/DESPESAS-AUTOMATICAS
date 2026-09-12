@@ -1,7 +1,8 @@
-import { Expense, ExpenseCategory, ExpenseEntity, NotificationSettings } from './types';
+import { Expense, ExpenseCategory, ExpenseCategoryItem, ExpenseEntity, NotificationSettings } from './types';
 
 export const DEFAULT_WHATSAPP_NUMBER = '5588994419892';
 export const NOTIFICATION_STORAGE_KEY = 'gestao_notificacoes_config_v1';
+export const CATEGORIES_STORAGE_KEY = 'gestao_despesas_categorias_v2';
 
 export const DEFAULT_NOTIFICATION_SETTINGS: NotificationSettings = {
   whatsappNumber: '5588994419892',
@@ -12,6 +13,150 @@ export const DEFAULT_NOTIFICATION_SETTINGS: NotificationSettings = {
   notifyOnDueDay: true,
   notifyUpcomingDays: 1,
 };
+
+export const DEFAULT_CATEGORIES: ExpenseCategoryItem[] = [
+  { id: 'cat-cartao', nome: 'Cartão de Crédito', simbolo: '💳', cor: 'violet', padrao: true },
+  { id: 'cat-internet', nome: 'Internet', simbolo: '🌐', cor: 'sky', padrao: true },
+  { id: 'cat-funcionario', nome: 'Funcionário', simbolo: '👥', cor: 'rose', padrao: true },
+  { id: 'cat-contador', nome: 'Contador', simbolo: '🧮', cor: 'teal', padrao: true },
+  { id: 'cat-casa', nome: 'Casa', simbolo: '🏠', cor: 'blue', padrao: true },
+  { id: 'cat-cnpj', nome: 'CNPJ', simbolo: '🏢', cor: 'indigo', padrao: true },
+  { id: 'cat-imposto', nome: 'Imposto', simbolo: '📑', cor: 'red', padrao: true },
+  { id: 'cat-energia', nome: 'Energia', simbolo: '⚡', cor: 'amber', padrao: true },
+  { id: 'cat-agua', nome: 'Água', simbolo: '💧', cor: 'cyan', padrao: true },
+  // Modalidades adicionais para gestão
+  { id: 'cat-aluguel', nome: 'Aluguel Ponto', simbolo: '🔑', cor: 'orange', padrao: true },
+  { id: 'cat-moradia', nome: 'Moradia', simbolo: '🏡', cor: 'blue', padrao: true },
+  { id: 'cat-alimentacao', nome: 'Alimentação', simbolo: '🛒', cor: 'emerald', padrao: true },
+  { id: 'cat-transporte', nome: 'Transporte', simbolo: '🚗', cor: 'indigo', padrao: true },
+  { id: 'cat-saude', nome: 'Saúde', simbolo: '💊', cor: 'teal', padrao: true },
+  { id: 'cat-lazer', nome: 'Lazer', simbolo: '🎮', cor: 'pink', padrao: true },
+  { id: 'cat-equipamentos', nome: 'Equipamentos', simbolo: '🏋️', cor: 'amber', padrao: true },
+  { id: 'cat-manutencao', nome: 'Manutenção', simbolo: '🛠️', cor: 'yellow', padrao: true },
+  { id: 'cat-equipe', nome: 'Equipe & Salários', simbolo: '👔', cor: 'rose', padrao: true },
+  { id: 'cat-energia-agua', nome: 'Energia & Água', simbolo: '⚡', cor: 'cyan', padrao: true },
+  { id: 'cat-marketing', nome: 'Marketing', simbolo: '📢', cor: 'fuchsia', padrao: true },
+  { id: 'cat-softwares', nome: 'Softwares & Ferramentas', simbolo: '💻', cor: 'sky', padrao: true },
+  { id: 'cat-servidores', nome: 'Servidores & VPS', simbolo: '🖥️', cor: 'slate', padrao: true },
+  { id: 'cat-banca', nome: 'Banca & Aportes', simbolo: '🎯', cor: 'purple', padrao: true },
+  { id: 'cat-servicos', nome: 'Serviços', simbolo: '⚙️', cor: 'emerald', padrao: true },
+  { id: 'cat-outros', nome: 'Outros', simbolo: '📦', cor: 'slate', padrao: true },
+];
+
+export const POPULAR_CATEGORY_ICONS = [
+  '💳', '🌐', '👥', '🧮', '🏠', '🏢', '📑', '⚡', '💧',
+  '🔑', '🛒', '🚗', '💊', '🎮', '🏋️', '🛠️', '📢', '💻',
+  '🖥️', '🎯', '📦', '⛽', '🎓', '🍔', '✈️', '🛡️', '📞',
+  '💰', '📈', '⚖️', '🏥', '🏦', '👔', '🧹', '🏷️', '🔖',
+  '☕', '🍕', '🛵', '🚲', '🚚', '💡', '🔥', '🚿', '🧺'
+];
+
+export function loadCategoriesFromStorage(): ExpenseCategoryItem[] {
+  try {
+    const raw = localStorage.getItem(CATEGORIES_STORAGE_KEY);
+    if (!raw) {
+      localStorage.setItem(CATEGORIES_STORAGE_KEY, JSON.stringify(DEFAULT_CATEGORIES));
+      return DEFAULT_CATEGORIES;
+    }
+    const parsed = JSON.parse(raw);
+    if (Array.isArray(parsed) && parsed.length > 0) {
+      // Ensure newly introduced categories from user request are present
+      const existingNames = new Set(parsed.map((c: ExpenseCategoryItem) => c.nome.toLowerCase().trim()));
+      const toAdd = DEFAULT_CATEGORIES.filter(d => !existingNames.has(d.nome.toLowerCase().trim()));
+      if (toAdd.length > 0) {
+        const merged = [...parsed, ...toAdd];
+        localStorage.setItem(CATEGORIES_STORAGE_KEY, JSON.stringify(merged));
+        return merged;
+      }
+      return parsed;
+    }
+  } catch (e) {
+    console.error('Error loading categories from storage:', e);
+  }
+  return DEFAULT_CATEGORIES;
+}
+
+export function saveCategoriesToStorage(categories: ExpenseCategoryItem[]): void {
+  try {
+    localStorage.setItem(CATEGORIES_STORAGE_KEY, JSON.stringify(categories));
+  } catch (e) {
+    console.error('Error saving categories to storage:', e);
+  }
+}
+
+export function getCategorySymbol(catName: string, categories?: ExpenseCategoryItem[]): string {
+  if (!catName) return '📦';
+  const list = categories && categories.length > 0 ? categories : DEFAULT_CATEGORIES;
+  const direct = list.find(c => c.nome.toLowerCase().trim() === catName.toLowerCase().trim());
+  if (direct) return direct.simbolo;
+
+  // Partial matches
+  const lower = catName.toLowerCase();
+  if (lower.includes('crédito') || lower.includes('credito') || lower.includes('cartao') || lower.includes('cartão')) return '💳';
+  if (lower.includes('internet') || lower.includes('fibra') || lower.includes('wifi')) return '🌐';
+  if (lower.includes('funcion') || lower.includes('equipe') || lower.includes('salário') || lower.includes('salario')) return '👥';
+  if (lower.includes('contador') || lower.includes('contabil') || lower.includes('contábil')) return '🧮';
+  if (lower.includes('casa') || lower.includes('moradia') || lower.includes('resid')) return '🏠';
+  if (lower.includes('cnpj') || lower.includes('empresa')) return '🏢';
+  if (lower.includes('imposto') || lower.includes('darf') || lower.includes('das') || lower.includes('taxa')) return '📑';
+  if (lower.includes('energia') || lower.includes('luz') || lower.includes('enel')) return '⚡';
+  if (lower.includes('água') || lower.includes('agua') || lower.includes('cagece') || lower.includes('sanepar')) return '💧';
+  if (lower.includes('aluguel') || lower.includes('ponto')) return '🔑';
+  if (lower.includes('aliment') || lower.includes('mercado') || lower.includes('supermercado')) return '🛒';
+  if (lower.includes('transport') || lower.includes('combustivel') || lower.includes('uber')) return '🚗';
+  if (lower.includes('banca') || lower.includes('aporte') || lower.includes('aposta') || lower.includes('bet')) return '🎯';
+  if (lower.includes('software') || lower.includes('servidor') || lower.includes('vps')) return '💻';
+  if (lower.includes('marketing') || lower.includes('trafego') || lower.includes('instagram')) return '📢';
+  if (lower.includes('equipamento') || lower.includes('anilha') || lower.includes('peso')) return '🏋️';
+
+  return '📦';
+}
+
+export function getCategoryBadgeClasses(catName: string, categories?: ExpenseCategoryItem[]): {
+  bg: string;
+  text: string;
+  border: string;
+  simbolo: string;
+} {
+  const simbolo = getCategorySymbol(catName, categories);
+  const lower = (catName || '').toLowerCase();
+
+  if (lower.includes('cartão') || lower.includes('cartao') || lower.includes('banca')) {
+    return { bg: 'bg-violet-50', text: 'text-violet-700', border: 'border-violet-200', simbolo };
+  }
+  if (lower.includes('internet') || lower.includes('softwares')) {
+    return { bg: 'bg-sky-50', text: 'text-sky-700', border: 'border-sky-200', simbolo };
+  }
+  if (lower.includes('funcionário') || lower.includes('funcionario') || lower.includes('equipe')) {
+    return { bg: 'bg-rose-50', text: 'text-rose-700', border: 'border-rose-200', simbolo };
+  }
+  if (lower.includes('contador')) {
+    return { bg: 'bg-teal-50', text: 'text-teal-800', border: 'border-teal-200', simbolo };
+  }
+  if (lower.includes('casa') || lower.includes('moradia')) {
+    return { bg: 'bg-blue-50', text: 'text-blue-700', border: 'border-blue-200', simbolo };
+  }
+  if (lower.includes('cnpj')) {
+    return { bg: 'bg-indigo-50', text: 'text-indigo-700', border: 'border-indigo-200', simbolo };
+  }
+  if (lower.includes('imposto') || lower.includes('taxa')) {
+    return { bg: 'bg-red-50', text: 'text-red-700', border: 'border-red-200', simbolo };
+  }
+  if (lower.includes('energia') || lower.includes('luz') || lower.includes('equipamento')) {
+    return { bg: 'bg-amber-50', text: 'text-amber-800', border: 'border-amber-200', simbolo };
+  }
+  if (lower.includes('água') || lower.includes('agua')) {
+    return { bg: 'bg-cyan-50', text: 'text-cyan-800', border: 'border-cyan-200', simbolo };
+  }
+
+  // Fallback to static mapping
+  const existing = CATEGORY_COLORS[catName];
+  if (existing) {
+    return { ...existing, simbolo };
+  }
+
+  return { bg: 'bg-slate-100', text: 'text-slate-700', border: 'border-slate-200', simbolo };
+}
 
 export const ENTITIES: {
   id: ExpenseEntity;

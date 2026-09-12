@@ -37,11 +37,16 @@ import {
   Copy,
   Check,
   Share2,
+  Layers,
+  Sparkles,
 } from 'lucide-react';
+import { ExpenseCategoryItem } from '../types';
 import { AccountingSummaryModal } from './AccountingSummaryModal';
 
 interface SettingsTabProps {
   expenses: Expense[];
+  categories?: ExpenseCategoryItem[];
+  onOpenCategoriesModal?: () => void;
   onImportExpenses: (expenses: Expense[]) => void;
   onResetExpenses: () => void;
   notificationSettings: NotificationSettings;
@@ -51,6 +56,8 @@ interface SettingsTabProps {
 
 export const SettingsTab: React.FC<SettingsTabProps> = ({
   expenses,
+  categories = [],
+  onOpenCategoriesModal,
   onImportExpenses,
   onResetExpenses,
   notificationSettings,
@@ -531,7 +538,81 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
         </div>
       </section>
 
-      {/* 2. Resumo das Despesas em Formato Texto (Contabilidade & WhatsApp) */}
+      {/* 2. Modalidades & Símbolos das Despesas (Cartão, Internet, Funcionário, Contador, Casa, CNPJ, Imposto, Energia, Água...) */}
+      <section className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/90 shadow-xs space-y-3.5">
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex items-center gap-2.5">
+            <div className="w-10 h-10 rounded-xl bg-violet-600 text-white flex items-center justify-center shadow-xs shrink-0">
+              <Layers className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="flex items-center gap-1.5">
+                <h3 className="text-sm font-bold text-slate-900">
+                  Modalidades &amp; Símbolos das Despesas
+                </h3>
+                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-violet-100 text-violet-800 border border-violet-200">
+                  Personalizável
+                </span>
+              </div>
+              <p className="text-xs text-slate-500">
+                Edite ou crie novas modalidades com símbolos e ícones para organizar suas contas.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Modalidades Grid Preview */}
+        <div className="p-3 bg-slate-50 border border-slate-200/80 rounded-xl space-y-2.5">
+          <div className="flex items-center justify-between text-xs">
+            <span className="font-bold text-slate-700">
+              Modalidades ativas ({categories.length}):
+            </span>
+            {onOpenCategoriesModal && (
+              <button
+                type="button"
+                onClick={onOpenCategoriesModal}
+                className="text-[11px] font-bold text-violet-700 hover:text-violet-900 hover:underline"
+              >
+                Editar todas
+              </button>
+            )}
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+            {categories.slice(0, 9).map(cat => (
+              <div
+                key={cat.id}
+                className="p-2 rounded-lg bg-white border border-slate-200/80 flex items-center gap-2 shadow-2xs"
+              >
+                <span className="text-base select-none">{cat.simbolo || '📦'}</span>
+                <span className="text-xs font-semibold text-slate-800 truncate">
+                  {cat.nome}
+                </span>
+              </div>
+            ))}
+          </div>
+
+          {categories.length > 9 && (
+            <p className="text-[11px] text-slate-500 text-center">
+              + {categories.length - 9} outras modalidades configuradas
+            </p>
+          )}
+        </div>
+
+        {/* Open Modal Button */}
+        {onOpenCategoriesModal && (
+          <button
+            type="button"
+            onClick={onOpenCategoriesModal}
+            className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-violet-600 hover:bg-violet-700 active:scale-98 text-white font-bold text-xs sm:text-sm shadow-xs transition-all"
+          >
+            <Layers className="w-4 h-4" />
+            <span>Gerenciar Modalidades (+ Criar / Editar Símbolos)</span>
+          </button>
+        )}
+      </section>
+
+      {/* 3. Resumo das Despesas em Formato Texto (Contabilidade & WhatsApp) */}
       <section className="bg-white p-4 sm:p-5 rounded-2xl border border-emerald-200/90 shadow-xs space-y-3.5">
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-center gap-2.5">

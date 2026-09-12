@@ -1,10 +1,11 @@
 import React, { useState, useMemo } from 'react';
-import { Expense, ExpenseEntity, FilterStatus, TabType } from '../types';
+import { Expense, ExpenseCategoryItem, ExpenseEntity, FilterStatus, TabType } from '../types';
 import {
   formatCurrency,
   CATEGORY_COLORS,
   getDueDateStatus,
   ENTITIES,
+  getCategoryBadgeClasses,
 } from '../utils';
 import {
   CheckCircle2,
@@ -25,11 +26,13 @@ import {
   Clock,
   ShieldCheck,
   MessageCircle,
+  Layers,
 } from 'lucide-react';
 
 interface OverviewTabProps {
   expenses: Expense[];
-  onConfirmPayment: (id: number) => void;
+  categories?: ExpenseCategoryItem[];
+  onConfirmPayment: (expense: Expense) => void;
   onToggleStatus: (id: number) => void;
   onDeleteExpense: (id: number) => void;
   onOpenReceipt: (expense: Expense) => void;
@@ -37,11 +40,13 @@ interface OverviewTabProps {
   onNavigateToNewWithEntity?: (entity: ExpenseEntity) => void;
   onNotifyWhatsAppExpense?: (expense: Expense) => void;
   onOpenWhatsAppModal?: () => void;
+  onOpenCategoriesModal?: () => void;
   whatsappNumber?: string;
 }
 
 export const OverviewTab: React.FC<OverviewTabProps> = ({
   expenses,
+  categories,
   onConfirmPayment,
   onToggleStatus,
   onDeleteExpense,
@@ -50,6 +55,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
   onNavigateToNewWithEntity,
   onNotifyWhatsAppExpense,
   onOpenWhatsAppModal,
+  onOpenCategoriesModal,
   whatsappNumber,
 }) => {
   const [filterStatus, setFilterStatus] = useState<FilterStatus>('Todas');
@@ -446,23 +452,37 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
           </div>
         )}
 
-        {/* Search Field */}
-        <div className="relative">
-          <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={e => setSearchQuery(e.target.value)}
-            placeholder="Buscar por descrição, categoria ou empresa..."
-            className="w-full pl-9 pr-3 py-2 bg-white border border-slate-200 rounded-xl text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
-          />
-          {searchQuery && (
+        {/* Filter Bar Action: Search + Categories */}
+        <div className="flex items-center gap-2">
+          <div className="relative flex-1">
+            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              placeholder="Buscar por descrição, categoria..."
+              className="w-full pl-9 pr-3 py-2 bg-white border border-slate-200 rounded-xl text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+            />
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={() => setSearchQuery('')}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400 hover:text-slate-600"
+              >
+                Limpar
+              </button>
+            )}
+          </div>
+
+          {onOpenCategoriesModal && (
             <button
               type="button"
-              onClick={() => setSearchQuery('')}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400 hover:text-slate-600"
+              onClick={onOpenCategoriesModal}
+              className="shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 hover:text-slate-900 font-bold text-xs shadow-2xs transition-colors"
+              title="Criar e editar modalidades e símbolos das despesas"
             >
-              Limpar
+              <Layers className="w-3.5 h-3.5 text-emerald-600" />
+              <span className="hidden sm:inline">Modalidades</span>
             </button>
           )}
         </div>
@@ -473,8 +493,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
             {filteredExpenses.map(exp => {
               const isPaid = exp.status === 'Pago';
               const entity = exp.entidade || 'Pessoal';
-              const categoryColor =
-                CATEGORY_COLORS[exp.categoria] || CATEGORY_COLORS['Outros'];
+              const categoryBadge = getCategoryBadgeClasses(exp.categoria, categories);
               const dueInfo = getDueDateStatus(exp.vencimento, exp.status);
               const hasReceipt = Boolean(exp.comprovante || exp.comprovanteNome);
 
@@ -509,11 +528,11 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
                             <span>{entity}</span>
                           </span>
 
-                          {/* Category Tag */}
+                          {/* Category Tag with Custom Symbol */}
                           <span
-                            className={`inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-md border ${categoryColor.bg} ${categoryColor.text} ${categoryColor.border}`}
+                            className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-md border ${categoryBadge.bg} ${categoryBadge.text} ${categoryBadge.border}`}
                           >
-                            <Tag className="w-2.5 h-2.5" />
+                            <span className="text-xs">{categoryBadge.simbolo}</span>
                             <span>{exp.categoria}</span>
                           </span>
                         </div>
@@ -603,8 +622,9 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
                       <button
                         type="button"
                         id={`pay-${exp.id}`}
-                        onClick={() => onConfirmPayment(exp.id)}
+                        onClick={() => onConfirmPayment(exp)}
                         className="w-full flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-bold text-xs shadow-xs transition-colors"
+                        title="Confirmar pagamento e ajustar valor caso tenha variado"
                       >
                         <CheckCircle2 className="w-3.5 h-3.5" />
                         <span>Confirmar Pagamento</span>

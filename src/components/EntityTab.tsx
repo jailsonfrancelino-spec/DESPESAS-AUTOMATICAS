@@ -1,10 +1,11 @@
 import React, { useState, useMemo } from 'react';
-import { Expense, ExpenseEntity, FilterStatus } from '../types';
+import { Expense, ExpenseCategoryItem, ExpenseEntity, FilterStatus } from '../types';
 import {
   formatCurrency,
   CATEGORY_COLORS,
   getDueDateStatus,
   ENTITIES,
+  getCategoryBadgeClasses,
 } from '../utils';
 import {
   CheckCircle2,
@@ -27,18 +28,21 @@ import {
 interface EntityTabProps {
   entity: ExpenseEntity;
   expenses: Expense[];
-  onConfirmPayment: (id: number) => void;
+  categories?: ExpenseCategoryItem[];
+  onConfirmPayment: (expense: Expense) => void;
   onToggleStatus: (id: number) => void;
   onDeleteExpense: (id: number) => void;
   onOpenReceipt: (expense: Expense) => void;
   onAddNewExpense: (entity: ExpenseEntity) => void;
   onNotifyWhatsAppExpense?: (expense: Expense) => void;
   onOpenWhatsAppModal?: () => void;
+  onOpenCategoriesModal?: () => void;
 }
 
 export const EntityTab: React.FC<EntityTabProps> = ({
   entity,
   expenses,
+  categories,
   onConfirmPayment,
   onToggleStatus,
   onDeleteExpense,
@@ -46,6 +50,7 @@ export const EntityTab: React.FC<EntityTabProps> = ({
   onAddNewExpense,
   onNotifyWhatsAppExpense,
   onOpenWhatsAppModal,
+  onOpenCategoriesModal,
 }) => {
   const [filterStatus, setFilterStatus] = useState<FilterStatus>('Todas');
   const [searchQuery, setSearchQuery] = useState('');
@@ -253,8 +258,7 @@ export const EntityTab: React.FC<EntityTabProps> = ({
           <div className="space-y-3">
             {displayedExpenses.map(exp => {
               const isPaid = exp.status === 'Pago';
-              const categoryColor =
-                CATEGORY_COLORS[exp.categoria] || CATEGORY_COLORS['Outros'];
+              const categoryBadge = getCategoryBadgeClasses(exp.categoria, categories);
               const dueInfo = getDueDateStatus(exp.vencimento, exp.status);
               const hasReceipt = Boolean(exp.comprovante || exp.comprovanteNome);
 
@@ -279,9 +283,9 @@ export const EntityTab: React.FC<EntityTabProps> = ({
                       <div className="min-w-0">
                         <div className="flex items-center gap-1.5 mb-1">
                           <span
-                            className={`inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-md border ${categoryColor.bg} ${categoryColor.text} ${categoryColor.border}`}
+                            className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-md border ${categoryBadge.bg} ${categoryBadge.text} ${categoryBadge.border}`}
                           >
-                            <Tag className="w-2.5 h-2.5" />
+                            <span className="text-xs">{categoryBadge.simbolo}</span>
                             <span>{exp.categoria}</span>
                           </span>
                         </div>
@@ -369,8 +373,9 @@ export const EntityTab: React.FC<EntityTabProps> = ({
                     {exp.status === 'Pendente' ? (
                       <button
                         type="button"
-                        onClick={() => onConfirmPayment(exp.id)}
+                        onClick={() => onConfirmPayment(exp)}
                         className="w-full flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-bold text-xs shadow-xs transition-colors"
+                        title="Confirmar pagamento e ajustar valor caso tenha variado"
                       >
                         <CheckCircle2 className="w-3.5 h-3.5" />
                         <span>Confirmar Pagamento</span>
