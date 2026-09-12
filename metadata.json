@@ -1,0 +1,6 @@
+{
+  "name": "Gestão Financeira & Lembretes",
+  "description": "Controle financeiro e despesas dividido entre Pessoal e empresas (Academia e Bets) com lembretes e comprovantes.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
