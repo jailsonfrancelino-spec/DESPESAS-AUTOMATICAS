@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Expense, ExpenseCategory, ExpenseCategoryItem, ExpenseEntity, TabType } from '../types';
+import { Expense, ExpenseCategory, ExpenseCategoryItem, ExpenseEntity, TabType, NavigationMode } from '../types';
 import {
   CATEGORIES_BY_ENTITY,
   ENTITIES,
@@ -28,6 +28,7 @@ interface NewExpenseTabProps {
   onOpenCategoriesModal?: () => void;
   onAddExpense: (expense: Omit<Expense, 'id'>) => void;
   onNavigateToTab: (tab: TabType) => void;
+  navMode?: NavigationMode;
 }
 
 const ENTITY_SUGGESTIONS: Record<
@@ -68,6 +69,7 @@ export const NewExpenseTab: React.FC<NewExpenseTabProps> = ({
   onOpenCategoriesModal,
   onAddExpense,
   onNavigateToTab,
+  navMode = 'iphone',
 }) => {
   const [entidade, setEntidade] = useState<ExpenseEntity>(initialEntity);
   const [descricao, setDescricao] = useState('');

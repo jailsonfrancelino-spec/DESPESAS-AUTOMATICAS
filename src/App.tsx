@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { Expense, ExpenseCategoryItem, ExpenseEntity, TabType, NotificationSettings } from './types';
+import { Expense, ExpenseCategoryItem, ExpenseEntity, TabType, NotificationSettings, NavigationMode } from './types';
 import {
   loadExpensesFromStorage,
   saveExpensesToStorage,
@@ -29,9 +29,25 @@ import { ReceiptModal } from './components/ReceiptModal';
 import { WhatsAppModal } from './components/WhatsAppModal';
 import { CategoryManagerModal } from './components/CategoryManagerModal';
 import { PaymentConfirmationModal } from './components/PaymentConfirmationModal';
+import { LoginScreen } from './components/LoginScreen';
+import { SupabaseDiagnosticModal } from './components/SupabaseDiagnosticModal';
 import { Bell, X } from 'lucide-react';
 
 export default function App() {
+  const [authUser, setAuthUser] = useState<{ username: string; email?: string } | null>(() => {
+    try {
+      const saved = localStorage.getItem('jailson_auth_session');
+      if (saved) {
+        return JSON.parse(saved);
+      }
+      // Sessão inicial salva automaticamente para jailson12
+      const defaultAuth = { username: 'jailson12', email: 'jailson12@hotmail.com' };
+      localStorage.setItem('jailson_auth_session', JSON.stringify(defaultAuth));
+      return defaultAuth;
+    } catch {
+      return { username: 'jailson12', email: 'jailson12@hotmail.com' };
+    }
+  });
   const [expenses, setExpenses] = useState<Expense[]>(() => {
     return loadExpensesFromStorage();
   });
@@ -48,7 +64,59 @@ export default function App() {
   const [selectedExpenseForWhatsApp, setSelectedExpenseForWhatsApp] = useState<Expense | null>(null);
   const [dailyAlarmBannerVisible, setDailyAlarmBannerVisible] = useState(false);
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
+  const [isSupabaseModalOpen, setIsSupabaseModalOpen] = useState(false);
   const [paymentModalExpense, setPaymentModalExpense] = useState<Expense | null>(null);
+  const [navMode, setNavMode] = useState<NavigationMode>(() => {
+    try {
+      const saved = localStorage.getItem('jailson_nav_mode');
+      return saved === 'macbook' ? 'macbook' : 'iphone';
+    } catch {
+      return 'iphone';
+    }
+  });
+
+  const handleToggleNavMode = (mode: NavigationMode) => {
+    setNavMode(mode);
+    try {
+      localStorage.setItem('jailson_nav_mode', mode);
+    } catch {
+      // ignore
+    }
+  };
+
+  // Keyboard navigation shortcuts when in MacBook mode
+  useEffect(() => {
+    if (navMode !== 'macbook') return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Don't trigger shortcuts when user is typing in form inputs or modals
+      const target = e.target as HTMLElement;
+      if (
+        target.tagName === 'INPUT' ||
+        target.tagName === 'TEXTAREA' ||
+        target.tagName === 'SELECT' ||
+        target.isContentEditable
+      ) {
+        return;
+      }
+
+      if (e.key === '1') {
+        setActiveTab('overview');
+      } else if (e.key === '2') {
+        setActiveTab('pessoal');
+      } else if (e.key === '3') {
+        setActiveTab('academia');
+      } else if (e.key === '4') {
+        setActiveTab('bets');
+      } else if (e.key === '+' || e.key === 'n' || e.key === 'N') {
+        setActiveTab('new_expense');
+      } else if (e.key === '0') {
+        setActiveTab('settings');
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [navMode]);
 
   // Sync expenses with localStorage
   useEffect(() => {
@@ -229,16 +297,43 @@ export default function App() {
     setWhatsAppModalOpen(true);
   };
 
+  const handleLoginSuccess = (user: { username: string; email?: string }) => {
+    setAuthUser(user);
+  };
+
+  const handleLogout = () => {
+    try {
+      localStorage.removeItem('jailson_auth_session');
+    } catch {
+      // ignore
+    }
+    setAuthUser(null);
+  };
+
+  // Se o usuário não estiver autenticado, exibe a tela de login moderna com Tailwind
+  if (!authUser) {
+    return <LoginScreen onLoginSuccess={handleLoginSuccess} />;
+  }
+
   return (
     <div className="min-h-screen bg-[#F0F2F5] flex justify-center selection:bg-blue-100">
-      {/* Mobile-first iPhone Shell Container */}
-      <div className="w-full max-w-lg min-h-screen bg-[#F8F9FA] shadow-md border-x border-slate-200/80 flex flex-col">
+      {/* Mobile-first iPhone Shell or Widescreen MacBook Shell Container */}
+      <div
+        className={`w-full min-h-screen bg-[#F8F9FA] shadow-md border-x border-slate-200/80 flex flex-col transition-all duration-200 ${
+          navMode === 'macbook' ? 'max-w-7xl' : 'max-w-lg'
+        }`}
+      >
         {/* App Header with WhatsApp 09h Indicator */}
         <Header
           pendingCount={pendingCounts.total}
           dueTodayCount={dueTodayCount}
           whatsappNumber={notificationSettings.whatsappNumber}
           onOpenWhatsAppModal={handleOpenDailyWhatsAppModal}
+          navMode={navMode}
+          onToggleNavMode={handleToggleNavMode}
+          authUser={authUser}
+          onLogout={handleLogout}
+          onOpenSupabaseDiagnostic={() => setIsSupabaseModalOpen(true)}
         />
 
         {/* 09:00 AM Due Today Push Alert In-App Banner */}
@@ -283,6 +378,8 @@ export default function App() {
             setActiveTab(tab);
           }}
           pendingCounts={pendingCounts}
+          navMode={navMode}
+          onToggleNavMode={handleToggleNavMode}
         />
 
         {/* Main Content Body */}
@@ -302,6 +399,7 @@ export default function App() {
               onOpenWhatsAppModal={handleOpenDailyWhatsAppModal}
               onOpenCategoriesModal={() => setIsCategoryModalOpen(true)}
               whatsappNumber={notificationSettings.whatsappNumber}
+              navMode={navMode}
             />
           )}
 
@@ -319,6 +417,7 @@ export default function App() {
               onNotifyWhatsAppExpense={handleNotifyWhatsAppExpense}
               onOpenWhatsAppModal={handleOpenDailyWhatsAppModal}
               onOpenCategoriesModal={() => setIsCategoryModalOpen(true)}
+              navMode={navMode}
             />
           )}
 
@@ -336,6 +435,7 @@ export default function App() {
               onNotifyWhatsAppExpense={handleNotifyWhatsAppExpense}
               onOpenWhatsAppModal={handleOpenDailyWhatsAppModal}
               onOpenCategoriesModal={() => setIsCategoryModalOpen(true)}
+              navMode={navMode}
             />
           )}
 
@@ -353,6 +453,7 @@ export default function App() {
               onNotifyWhatsAppExpense={handleNotifyWhatsAppExpense}
               onOpenWhatsAppModal={handleOpenDailyWhatsAppModal}
               onOpenCategoriesModal={() => setIsCategoryModalOpen(true)}
+              navMode={navMode}
             />
           )}
 
@@ -364,6 +465,7 @@ export default function App() {
               onOpenCategoriesModal={() => setIsCategoryModalOpen(true)}
               onAddExpense={handleAddExpense}
               onNavigateToTab={setActiveTab}
+              navMode={navMode}
             />
           )}
 
@@ -378,10 +480,21 @@ export default function App() {
               notificationSettings={notificationSettings}
               onUpdateNotificationSettings={handleUpdateNotificationSettings}
               onOpenWhatsAppModal={handleOpenDailyWhatsAppModal}
+              navMode={navMode}
+              onToggleNavMode={handleToggleNavMode}
+              authUser={authUser}
+              onLogout={handleLogout}
+              onOpenSupabaseDiagnostic={() => setIsSupabaseModalOpen(true)}
             />
           )}
         </main>
       </div>
+
+      {/* Supabase Diagnostic & Table Verifier Modal */}
+      <SupabaseDiagnosticModal
+        isOpen={isSupabaseModalOpen}
+        onClose={() => setIsSupabaseModalOpen(false)}
+      />
 
       {/* WhatsApp Modal (Lembrete das 09:00 e envio de mensagem formatada) */}
       <WhatsAppModal

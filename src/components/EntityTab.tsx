@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Expense, ExpenseCategoryItem, ExpenseEntity, FilterStatus } from '../types';
+import { Expense, ExpenseCategoryItem, ExpenseEntity, FilterStatus, NavigationMode } from '../types';
 import {
   formatCurrency,
   CATEGORY_COLORS,
@@ -37,6 +37,7 @@ interface EntityTabProps {
   onNotifyWhatsAppExpense?: (expense: Expense) => void;
   onOpenWhatsAppModal?: () => void;
   onOpenCategoriesModal?: () => void;
+  navMode?: NavigationMode;
 }
 
 export const EntityTab: React.FC<EntityTabProps> = ({
@@ -51,6 +52,7 @@ export const EntityTab: React.FC<EntityTabProps> = ({
   onNotifyWhatsAppExpense,
   onOpenWhatsAppModal,
   onOpenCategoriesModal,
+  navMode = 'iphone',
 }) => {
   const [filterStatus, setFilterStatus] = useState<FilterStatus>('Todas');
   const [searchQuery, setSearchQuery] = useState('');
@@ -255,7 +257,7 @@ export const EntityTab: React.FC<EntityTabProps> = ({
 
         {/* Cards */}
         {displayedExpenses.length > 0 ? (
-          <div className="space-y-3">
+          <div className={`gap-3 ${navMode === 'macbook' ? 'grid grid-cols-1 lg:grid-cols-2' : 'space-y-3'}`}>
             {displayedExpenses.map(exp => {
               const isPaid = exp.status === 'Pago';
               const categoryBadge = getCategoryBadgeClasses(exp.categoria, categories);

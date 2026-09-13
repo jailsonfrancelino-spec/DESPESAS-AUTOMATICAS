@@ -75,3 +75,5 @@ export interface NotificationSettings {
   lastNotifiedDate?: string; // YYYY-MM-DD
 }
 
+export type NavigationMode = 'iphone' | 'macbook';
+

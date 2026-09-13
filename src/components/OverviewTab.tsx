@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Expense, ExpenseCategoryItem, ExpenseEntity, FilterStatus, TabType } from '../types';
+import { Expense, ExpenseCategoryItem, ExpenseEntity, FilterStatus, TabType, NavigationMode } from '../types';
 import {
   formatCurrency,
   CATEGORY_COLORS,
@@ -42,6 +42,7 @@ interface OverviewTabProps {
   onOpenWhatsAppModal?: () => void;
   onOpenCategoriesModal?: () => void;
   whatsappNumber?: string;
+  navMode?: NavigationMode;
 }
 
 export const OverviewTab: React.FC<OverviewTabProps> = ({
@@ -57,6 +58,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
   onOpenWhatsAppModal,
   onOpenCategoriesModal,
   whatsappNumber,
+  navMode = 'iphone',
 }) => {
   const [filterStatus, setFilterStatus] = useState<FilterStatus>('Todas');
   const [filterEntity, setFilterEntity] = useState<ExpenseEntity | 'Todas'>('Todas');
@@ -81,6 +83,11 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
       expenses
         .filter(exp => exp.status === 'Pendente')
         .reduce((acc, curr) => acc + (Number(curr.valor) || 0), 0),
+    [expenses]
+  );
+
+  const countPendenteGeral = useMemo(
+    () => expenses.filter(exp => exp.status === 'Pendente').length,
     [expenses]
   );
 
@@ -171,7 +178,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
         </div>
 
         {/* Global Cards */}
-        <div className="grid grid-cols-2 gap-2.5 sm:gap-3">
+        <div className={`grid gap-2.5 sm:gap-3 ${navMode === 'macbook' ? 'grid-cols-1 sm:grid-cols-3' : 'grid-cols-2'}`}>
           <div className="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200/90 shadow-xs flex flex-col justify-between">
             <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider block">
               Gasto Geral Previsto
@@ -191,8 +198,20 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
             <span className="text-lg sm:text-2xl font-black text-rose-600 tracking-tight my-1">
               {formatCurrency(pendenteGeral)}
             </span>
+            <div className="inline-flex items-center gap-1 text-[11px] font-bold text-rose-700 bg-rose-50 px-2 py-0.5 rounded-md">
+              <span>{countPendenteGeral} contas a pagar</span>
+            </div>
+          </div>
+
+          <div className={`bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200/90 shadow-xs flex flex-col justify-between ${navMode === 'macbook' ? 'flex' : 'col-span-2 hidden sm:flex'}`}>
+            <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider block">
+              Total Quitado
+            </span>
+            <span className="text-lg sm:text-2xl font-black text-emerald-600 tracking-tight my-1">
+              {formatCurrency(pagoGeral)}
+            </span>
             <div className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-md">
-              <span>Pago: {formatCurrency(pagoGeral)}</span>
+              <span>{percentPagoGeral}% liquidado</span>
             </div>
           </div>
         </div>
@@ -228,7 +247,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
         </div>
 
         {/* 3 Dedicated Cards for Pessoal, Academia and Bets */}
-        <div className="grid grid-cols-1 gap-3">
+        <div className={`grid gap-3.5 ${navMode === 'macbook' ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3' : 'grid-cols-1'}`}>
           {entitySummaries.map(item => {
             const isPersonal = item.entity === 'Pessoal';
             const tabTarget: TabType =
@@ -489,7 +508,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
 
         {/* Expense Cards List */}
         {filteredExpenses.length > 0 ? (
-          <div className="space-y-3">
+          <div className={`gap-3 ${navMode === 'macbook' ? 'grid grid-cols-1 lg:grid-cols-2' : 'space-y-3'}`}>
             {filteredExpenses.map(exp => {
               const isPaid = exp.status === 'Pago';
               const entity = exp.entidade || 'Pessoal';
