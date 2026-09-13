@@ -17,9 +17,17 @@ export function getSupabaseConfig(): { url: string; key: string; isConfigured: b
     // ignore
   }
 
-  const rawUrl = (storedUrl || metaEnv.VITE_SUPABASE_URL || 'https://seu-projeto.supabase.co').trim();
+  const rawUrl = (
+    storedUrl ||
+    metaEnv.VITE_SUPABASE_URL ||
+    'https://cnmwcynadjfbngjmhtfz.supabase.co'
+  ).trim();
   const url = sanitizeSupabaseUrl(rawUrl);
-  const key = (storedKey || metaEnv.VITE_SUPABASE_ANON_KEY || 'sua-chave-anon-aqui').trim();
+  const key = (
+    storedKey ||
+    metaEnv.VITE_SUPABASE_ANON_KEY ||
+    'sb_publishable_4wPvYlcam2KSz8znzw4CPw_xGJMCRNW'
+  ).trim();
 
   const isConfigured =
     Boolean(url) &&
